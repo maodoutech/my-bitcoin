@@ -102,6 +102,10 @@ bool AppInit(int argc, char* argv[])
         }
 
         SoftSetBoolArg("-server", true);
+
+        // Set this early so that parameter interactions go to console
+        InitLogging();
+        LogPrintf("Log Inited");
     }
     catch (const std::exception& e) {
     } catch (...) {

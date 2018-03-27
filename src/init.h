@@ -9,6 +9,9 @@ enum HelpMessageMode {
     HMM_BITCOIN_QT
 };
 
+//!Initialize the logging infrastructure
+void InitLogging();
+
 /** Help for options shared between UI and daemon (for -help) */
 std::string HelpMessage(HelpMessageMode mode);
 /** Returns licensing information (for -version) */

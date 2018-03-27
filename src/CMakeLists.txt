@@ -12,6 +12,7 @@ set(bitcoind_source
     util.cpp
     utilmoneystr.cpp
     utilstrencodings.cpp
+    utiltime.cpp
 )
 
 ADD_DEFINITIONS(-DMAC_OSX)

@@ -1,7 +1,9 @@
 #include "util.h"
 
 #include "chainparamsbase.h"
+#include "tinyformat.h"
 #include "utilstrencodings.h"
+#include "utiltime.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/program_options/detail/config_file.hpp>
@@ -15,24 +17,154 @@ const char * const BITCOIN_PID_FILENAME = "bitcoind.pid";
 
 map<string, string> mapArgs;
 map<string, vector<string> > mapMultiArgs;
+bool fDebug = false;
+bool fPrintToConsole = false;
+bool fPrintToDebugLog = true;
+bool fLogTimestamps = DEFAULT_LOGTIMESTAMPS;
+bool fLogTimeMicros = DEFAULT_LOGTIMEMICROS;
+bool fLogIPs = DEFAULT_LOGIPS;
+volatile bool fReopenDebugLog = false;
 
 static boost::filesystem::path pathCached;
 static boost::filesystem::path pathCachedNetSpecific;
 
-void SetupEnvironment()
-{
-    try {
-        std::locale(""); // Raises a runtime error if current locale is invalid
-    } catch (const std::runtime_error&) {
-        setenv("LC_ALL", "C", 1);
-    }
+/**
+ * LogPrintf() has been broken a couple of times now
+ * by well-meaning people adding mutexes in the most straightforward way.
+ * It breaks because it may be called by global destructors during shutdown.
+ * Since the order of destruction of static/global objects is undefined,
+ * defining a mutex as a global object doesn't work (the mutex gets
+ * destroyed, and then some later destructor calls OutputDebugStringF,
+ * maybe indirectly, and you get a core dump at shutdown trying to lock
+ * the mutex).
+ */
 
-    // The path locale is lazy initialized and to avoid deinitialization errors
-    // in multithreading environments, it is set explicitly by the main thread.
-    // A dummy locale is used to extract the internal default locale, used by
-    // boost::filesystem::path, which is then used to explicitly imbue the path.
-    std::locale loc = boost::filesystem::path::imbue(std::locale::classic());
-    boost::filesystem::path::imbue(loc);
+static boost::once_flag debugPrintInitFlag = BOOST_ONCE_INIT;
+
+/**
+ * We use boost::call_once() to make sure mutexDebugLog and
+ * vMsgsBeforeOpenLog are initialized in a thread-safe manner.
+ *
+ * NOTE: fileout, mutexDebugLog and sometimes vMsgsBeforeOpenLog
+ * are leaked on exit. This is ugly, but will be cleaned up by
+ * the OS/libc. When the shutdown sequence is fully audited and
+ * tested, explicit destruction of these objects can be implemented.
+ */
+static FILE* fileout = NULL;
+static boost::mutex* mutexDebugLog = NULL;
+static list<string> *vMsgsBeforeOpenLog;
+
+static int FileWriteStr(const std::string &str, FILE *fp)
+{
+    return fwrite(str.data(), 1, str.size(), fp);
+}
+
+static void DebugPrintInit()
+{
+    assert(mutexDebugLog == NULL);
+    mutexDebugLog = new boost::mutex();
+    vMsgsBeforeOpenLog = new list<string>;
+}
+
+bool LogAcceptCategory(const char* category)
+{
+    if (category != NULL)
+    {
+        if (!fDebug)
+            return false;
+
+        // Give each thread quick access to -debug settings.
+        // This helps prevent issues debugging global destructors,
+        // where mapMultiArgs might be deleted before another
+        // global destructor calls LogPrint()
+        static boost::thread_specific_ptr<set<string> > ptrCategory;
+        if (ptrCategory.get() == NULL)
+        {
+            const vector<string>& categories = mapMultiArgs["-debug"];
+            ptrCategory.reset(new set<string>(categories.begin(), categories.end()));
+            // thread_specific_ptr automatically deletes the set when the thread ends.
+        }
+        const set<string>& setCategories = *ptrCategory.get();
+
+        // if not debugging everything and not debugging specific category, LogPrint does nothing.
+        if (setCategories.count(string("")) == 0 &&
+            setCategories.count(string("1")) == 0 &&
+            setCategories.count(string(category)) == 0)
+            return false;
+    }
+    return true;
+}
+
+/**
+ * fStartedNewLine is a state variable held by the calling context that will
+ * suppress printing of the timestamp when multiple calls are made that don't
+ * end in a newline. Initialize it to true, and hold it, in the calling context.
+ */
+static std::string LogTimestampStr(const std::string &str, bool *fStartedNewLine)
+{
+    string strStamped;
+
+    if (!fLogTimestamps)
+        return str;
+
+    if (*fStartedNewLine) {
+        int64_t nTimeMicros = GetLogTimeMicros();
+        strStamped = DateTimeStrFormat("%Y-%m-%d %H:%M:%S", nTimeMicros/1000000);
+        if (fLogTimeMicros)
+            strStamped += strprintf(".%06d", nTimeMicros%1000000);
+        strStamped += ' ' + str;
+    } else
+        strStamped = str;
+
+    if (!str.empty() && str[str.size()-1] == '\n')
+        *fStartedNewLine = true;
+    else
+        *fStartedNewLine = false;
+
+    return strStamped;
+}
+
+int LogPrintStr(const std::string &str)
+{
+    int ret = 0; // Returns total number of characters written
+    static bool fStartedNewLine = true;
+
+    string strTimestamped = LogTimestampStr(str, &fStartedNewLine);
+
+    if (fPrintToConsole)
+    {
+        // print to console
+        ret = fwrite(strTimestamped.data(), 1, strTimestamped.size(), stdout);
+        fflush(stdout);
+    }
+    else if (fPrintToDebugLog)
+    {
+        std::cout << "xx" << std::endl;
+        boost::call_once(&DebugPrintInit, debugPrintInitFlag);
+        boost::mutex::scoped_lock scoped_lock(*mutexDebugLog);
+
+        // buffer if we haven't opened the log yet
+        if (fileout == NULL) {
+        std::cout << "x1" << std::endl;
+
+            assert(vMsgsBeforeOpenLog);
+            ret = strTimestamped.length();
+            vMsgsBeforeOpenLog->push_back(strTimestamped);
+        }
+        else
+        {
+            // reopen the log file, if requested
+            if (fReopenDebugLog) {
+                fReopenDebugLog = false;
+                boost::filesystem::path pathDebug = GetDataDir() / "debug.log";
+                if (freopen(pathDebug.string().c_str(),"a",fileout) != NULL)
+                    setbuf(fileout, NULL); // unbuffered
+            }
+
+            ret = FileWriteStr(strTimestamped, fileout);
+        }
+    }
+    return ret;
 }
 
 /** Interpret string as boolean, for argument parsing */
@@ -242,6 +374,22 @@ const boost::filesystem::path &GetDataDir(bool fNetSpecific)
     fs::create_directories(path);
 
     return path;
+}
+
+void SetupEnvironment()
+{
+    try {
+        std::locale(""); // Raises a runtime error if current locale is invalid
+    } catch (const std::runtime_error&) {
+        setenv("LC_ALL", "C", 1);
+    }
+
+    // The path locale is lazy initialized and to avoid deinitialization errors
+    // in multithreading environments, it is set explicitly by the main thread.
+    // A dummy locale is used to extract the internal default locale, used by
+    // boost::filesystem::path, which is then used to explicitly imbue the path.
+    std::locale loc = boost::filesystem::path::imbue(std::locale::classic());
+    boost::filesystem::path::imbue(loc);
 }
 
 int GetNumCores()
