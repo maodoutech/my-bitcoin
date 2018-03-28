@@ -8,6 +8,7 @@ set(bitcoind_source
     clientversion.cpp
     init.cpp
     noui.cpp
+    sync.cpp
     torcontrol.cpp
     util.cpp
     utilmoneystr.cpp
@@ -15,7 +16,7 @@ set(bitcoind_source
     utiltime.cpp
 )
 
-ADD_DEFINITIONS(-DMAC_OSX)
+ADD_DEFINITIONS(-DMAC_OSX -DEBUG_LOCKORDER)
 
 add_executable(bitcoind ${bitcoind_source})
 add_library(bitcoind_static STATIC ${bitcoind_source})

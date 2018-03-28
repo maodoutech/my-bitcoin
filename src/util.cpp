@@ -1,6 +1,7 @@
 #include "util.h"
 
 #include "chainparamsbase.h"
+#include "sync.h"
 #include "tinyformat.h"
 #include "utilstrencodings.h"
 #include "utiltime.h"
@@ -27,6 +28,7 @@ volatile bool fReopenDebugLog = false;
 
 static boost::filesystem::path pathCached;
 static boost::filesystem::path pathCachedNetSpecific;
+static CCriticalSection csPathCached;
 
 /**
  * LogPrintf() has been broken a couple of times now
@@ -139,13 +141,11 @@ int LogPrintStr(const std::string &str)
     }
     else if (fPrintToDebugLog)
     {
-        std::cout << "xx" << std::endl;
         boost::call_once(&DebugPrintInit, debugPrintInitFlag);
         boost::mutex::scoped_lock scoped_lock(*mutexDebugLog);
 
         // buffer if we haven't opened the log yet
         if (fileout == NULL) {
-        std::cout << "x1" << std::endl;
 
             assert(vMsgsBeforeOpenLog);
             ret = strTimestamped.length();
@@ -351,6 +351,8 @@ boost::filesystem::path GetDefaultDataDir()
 const boost::filesystem::path &GetDataDir(bool fNetSpecific)
 {
     namespace fs = boost::filesystem;
+
+    LOCK(csPathCached);
 
     fs::path &path = fNetSpecific ? pathCachedNetSpecific : pathCached;
 
