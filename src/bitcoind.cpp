@@ -1,9 +1,10 @@
 #include "init.h"
-#include "clientversion.h"
 #include "chainparams.h"
+#include "clientversion.h"
 #include "noui.h"
-#include "util.h"
+#include "scheduler.h"
 #include "tinyformat.h"
+#include "util.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string/predicate.hpp>
@@ -14,6 +15,9 @@ static bool fDaemon;
 
 bool AppInit(int argc, char* argv[])
 {
+    boost::thread_group threadGroup;
+    CScheduler scheduler;
+
     bool fRet = false;
 
     //
@@ -105,6 +109,8 @@ bool AppInit(int argc, char* argv[])
 
         // Set this early so that parameter interactions go to console
         InitLogging();
+        InitParameterInteraction();
+
         LogPrintf("Log Inited");
     }
     catch (const std::exception& e) {

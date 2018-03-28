@@ -8,6 +8,7 @@ set(bitcoind_source
     clientversion.cpp
     init.cpp
     noui.cpp
+    scheduler.cpp
     sync.cpp
     torcontrol.cpp
     util.cpp
@@ -26,4 +27,4 @@ SET_TARGET_PROPERTIES(bitcoind PROPERTIES ENABLE_EXPORTS 1)
 #SET_TARGET_PROPERTIES(bitcoind PROPERTIES CLEAN_DIRECT_OUTPUT 1)
 #SET_TARGET_PROPERTIES(bitcoind_static PROPERTIES CLEAN_DIRECT_OUTPUT 1)
 
-TARGET_LINK_LIBRARIES(bitcoind boost_filesystem boost_system boost_thread boost_program_options)
+TARGET_LINK_LIBRARIES(bitcoind boost_filesystem boost_system boost_thread boost_program_options boost_chrono)
