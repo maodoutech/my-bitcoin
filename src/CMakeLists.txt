@@ -7,6 +7,7 @@ set(bitcoind_source
     chainparamsbase.cpp
     clientversion.cpp
     init.cpp
+    net.cpp
     noui.cpp
     scheduler.cpp
     sync.cpp
@@ -15,6 +16,8 @@ set(bitcoind_source
     utilmoneystr.cpp
     utilstrencodings.cpp
     utiltime.cpp
+    uint256.cpp
+
 )
 
 ADD_DEFINITIONS(-DMAC_OSX -DEBUG_LOCKORDER)

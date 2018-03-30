@@ -42,4 +42,8 @@ static const size_t DEFAULT_MAXSENDBUFFER    = 1 * 1000;
 // NOTE: When adjusting this, update rpcnet:setban's help ("24h")
 static const unsigned int DEFAULT_MISBEHAVING_BANTIME = 60 * 60 * 24;  // Default 24-hour ban
 
+
+/** Maximum number of connections to simultaneously allow (aka connection slots) */
+extern int nMaxConnections;
+
 #endif // BITCOIN_NET_H

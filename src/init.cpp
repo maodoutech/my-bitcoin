@@ -13,12 +13,16 @@
 #include "policy/policy.h"
 #include "txdb.h"
 #include "clientversion.h"
+#include "scheduler.h"
 #include "script/sigcache.h"
 #include "tinyformat.h"
 #include "torcontrol.h"
 #include "ui_interface.h"
 #include "utilmoneystr.h"
 #include "utilstrencodings.h"
+
+#include <signal.h>
+#include <sys/stat.h>
 
 using namespace std;
 
@@ -27,7 +31,69 @@ static const bool DEFAULT_REST_ENABLE = false;
 static const bool DEFAULT_DISABLE_SAFEMODE = false;
 static const bool DEFAULT_STOPAFTERBLOCKIMPORT = false;
 
+// Win32 LevelDB doesn't use filedescriptors, and the ones used for
+// accessing block files don't count towards the fd_set size limit
+// anyway.
+#define MIN_CORE_FILEDESCRIPTORS 150
+
 CClientUIInterface uiInterface; // Declared but not defined in uiinterface.h
+
+//////////////////////////////////////////////////////////////////////////////
+//
+// Shutdown
+//
+
+//
+// Thread management and startup/shutdown:
+//
+// The network-processing threads are all part of a thread group
+// created by AppInit() or the Qt main() function.
+//
+// A clean exit happens when StartShutdown() or the SIGTERM
+// signal handler sets fRequestShutdown, which triggers
+// the DetectShutdownThread(), which interrupts the main thread group.
+// DetectShutdownThread() then exits, which causes AppInit() to
+// continue (it .joins the shutdown thread).
+// Shutdown() is then
+// called to clean up database connections, and stop other
+// threads that should only be stopped after the main network-processing
+// threads have exited.
+//
+// Note that if running -daemon the parent process returns from AppInit2
+// before adding any threads to the threadGroup, so .join_all() returns
+// immediately and the parent exits from main().
+//
+// Shutdown for Qt is very similar, only it uses a QTimer to detect
+// fRequestShutdown getting set, and then does the normal Qt
+// shutdown thing.
+//
+
+volatile bool fRequestShutdown = false;
+
+/**
+ * Signal handlers are very limited in what they are allowed to do, so:
+ */
+void HandleSIGTERM(int)
+{
+    fRequestShutdown = true;
+}
+
+void HandleSIGHUP(int)
+{
+    fReopenDebugLog = true;
+}
+
+bool static InitError(const std::string &str)
+{
+    uiInterface.ThreadSafeMessageBox(str, "", CClientUIInterface::MSG_ERROR);
+    return false;
+}
+
+bool static InitWarning(const std::string &str)
+{
+    uiInterface.ThreadSafeMessageBox(str, "", CClientUIInterface::MSG_WARNING);
+    return true;
+}
 
 std::string HelpMessage(HelpMessageMode mode)
 {
@@ -340,4 +406,131 @@ void InitLogging()
 
     LogPrintf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
     LogPrintf("Bitcoin version %s (%s)\n", FormatFullVersion(), CLIENT_DATE);
+}
+
+/** Initialize bitcoin.
+ *  @pre Parameters should be parsed and config file should be read.
+ */
+bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
+{
+    (void)threadGroup;
+    (void)scheduler;
+
+    // ********************************************************* Step 1: setup
+    if (!SetupNetworking())
+        return InitError("Initializing networking failed");
+    
+    if (GetBoolArg("-sysperms", false)) {
+#ifdef ENABLE_WALLET
+        if (!GetBoolArg("-disablewallet", false))
+            return InitError("-sysperms is not allowed in combination with enabled wallet functionality");
+#endif
+    } else {
+        umask(077);
+    }
+
+    // Clean shutdown on SIGTERM
+    struct sigaction sa;
+    sa.sa_handler = HandleSIGTERM;
+    sigemptyset(&sa.sa_mask);
+    sa.sa_flags = 0;
+    sigaction(SIGTERM, &sa, NULL);
+    sigaction(SIGINT, &sa, NULL);
+
+    // Reopen debug.log on SIGHUP
+    struct sigaction sa_hup;
+    sa_hup.sa_handler = HandleSIGHUP;
+    sigemptyset(&sa_hup.sa_mask);
+    sa_hup.sa_flags = 0;
+    sigaction(SIGHUP, &sa_hup, NULL);
+
+    // Ignore SIGPIPE, otherwise it will bring the daemon down if the client closes unexpectedly
+    signal(SIGPIPE, SIG_IGN);
+    
+    // ********************************************************* Step 2: parameter interactions
+    const CChainParams& chainparams = Params();
+
+    // also see: InitParameterInteraction()
+
+    // if using block pruning, then disable txindex
+    if (GetArg("-prune", 0)) {
+        if (GetBoolArg("-txindex", DEFAULT_TXINDEX))
+            return InitError("Prune mode is incompatible with -txindex.");
+#ifdef ENABLE_WALLET
+        if (GetBoolArg("-rescan", false)) {
+            return InitError("Rescans are not possible in pruned mode. You will need to use -reindex which will download the whole blockchain again.");
+        }
+#endif
+    }
+
+    // Make sure enough file descriptors are available
+    int nBind = std::max((int)mapArgs.count("-bind") + (int)mapArgs.count("-whitebind"), 1);
+    int nUserMaxConnections = GetArg("-maxconnections", DEFAULT_MAX_PEER_CONNECTIONS);
+    nMaxConnections = std::max(nUserMaxConnections, 0);
+
+    // Trim requested connection counts, to fit into system limitations
+    nMaxConnections = std::max(std::min(nMaxConnections, (int)(FD_SETSIZE - nBind - MIN_CORE_FILEDESCRIPTORS)), 0);
+    int nFD = RaiseFileDescriptorLimit(nMaxConnections + MIN_CORE_FILEDESCRIPTORS);
+    if (nFD < MIN_CORE_FILEDESCRIPTORS)
+        return InitError("Not enough file descriptors available.");
+
+    if (nMaxConnections < nUserMaxConnections)
+        InitWarning(strprintf(("Reducing -maxconnections from %d to %d, because of system limitations."), nUserMaxConnections, nMaxConnections));
+
+    // ********************************************************* Step 3: parameter-to-internal-flags
+
+    fDebug = !mapMultiArgs["-debug"].empty();
+    // Special-case: if -debug=0/-nodebug is set, turn off debugging messages
+    const vector<string>& categories = mapMultiArgs["-debug"];
+    if (GetBoolArg("-nodebug", false) || find(categories.begin(), categories.end(), string("0")) != categories.end())
+        fDebug = false;
+
+    // Check for -debugnet
+    if (GetBoolArg("-debugnet", false))
+        InitWarning("Unsupported argument -debugnet ignored, use -debug=net.");
+    // Check for -socks - as this is a privacy risk to continue, exit here
+    if (mapArgs.count("-socks"))
+        return InitError("Unsupported argument -socks found. Setting SOCKS version isn't possible anymore, only SOCKS5 proxies are supported.");
+    // Check for -tor - as this is a privacy risk to continue, exit here
+    if (GetBoolArg("-tor", false))
+        return InitError("Unsupported argument -tor found, use -onion.");
+
+    if (GetBoolArg("-benchmark", false))
+        InitWarning("Unsupported argument -benchmark ignored, use -debug=bench.");
+
+    if (GetBoolArg("-whitelistalwaysrelay", false))
+        InitWarning("Unsupported argument -whitelistalwaysrelay ignored, use -whitelistrelay and/or -whitelistforcerelay.");
+
+
+
+
+    // ********************************************************* Step 4: application initialization: dir lock, daemonize, pidfile, debug log
+
+
+    // ********************************************************* Step 5: verify wallet database integrity
+
+
+    // ********************************************************* Step 6: network initialization
+
+
+    // ********************************************************* Step 7: load block chain
+
+
+    // ********************************************************* Step 8: load wallet
+    
+
+    // ********************************************************* Step 9: data directory maintenance
+
+
+    // ********************************************************* Step 10: import blocks
+
+
+    // ********************************************************* Step 11: start node
+
+
+    // ********************************************************* Step 12: finished
+
+    
+
+    return !fRequestShutdown;
 }

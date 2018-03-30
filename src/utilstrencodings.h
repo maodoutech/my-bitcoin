@@ -6,6 +6,8 @@
 
 #include <string>
 
+signed char HexDigit(char c);
+
 int64_t atoi64(const char* psz);
 int64_t atoi64(const std::string& str);
 int atoi(const std::string& str);

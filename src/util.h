@@ -33,6 +33,7 @@ inline bool IsSwitchChar(char c)
 }
 
 void SetupEnvironment();
+bool SetupNetworking();
 
 /** Return true if log accepts specified category */
 bool LogAcceptCategory(const char* category);
@@ -142,6 +143,8 @@ void ReadConfigFile(std::map<std::string, std::string>& mapSettingsRet, std::map
 bool TryCreateDirectory(const boost::filesystem::path& p);
 boost::filesystem::path GetDefaultDataDir();
 const boost::filesystem::path &GetDataDir(bool fNetSpecific = true);
+
+int RaiseFileDescriptorLimit(int nMinFD);
 
 /**
  * Return the number of physical cores available on the current system.
