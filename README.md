@@ -38,3 +38,5 @@ make
 3. 每个版本基本都是一天左右的工作量，与上版本的diff可以参考doc的说明
 4. 每个版本都会打一个tag与doc下的文档对应
 
+区块链技术并不是一项新技术，而是通过分布式存储、密码学、共识机制、P2P的集成创新，因此在代码阅读的过程中其实很多是在看它的
+设计理念。我在阅读代码过程中主要是参考![精通比特币](http://book.8btc.com/masterbitcoin2cn)和![WIKI](https://en.bitcoin.it/wiki/Main_Page)
