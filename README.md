@@ -40,3 +40,18 @@ make
 
 区块链技术并不是一项新技术，而是通过分布式存储、密码学、共识机制、P2P的集成创新，因此在代码阅读的过程中其实很多是在看它的
 设计理念。我在阅读代码过程中主要是参考[精通比特币](http://book.8btc.com/masterbitcoin2cn)和[WIKI](https://en.bitcoin.it/wiki/Main_Page)
+
+## 文档
+
+### 理论
+[代码结构](https://github.com/maodoutech/my-bitcoin/tree/master/doc/overview.md)
+
+[交易](https://github.com/maodoutech/my-bitcoin/tree/master/doc/theory_transaction.md)
+
+### 版本
+
+1. [环境搭建](https://github.com/maodoutech/my-bitcoin/blob/master/doc/v1.md)
+2. [AppInit](https://github.com/maodoutech/my-bitcoin/blob/master/doc/v2.md)
+3. [日志模块和琐](https://github.com/maodoutech/my-bitcoin/blob/master/doc/v3.md)
+4. [任务池](https://github.com/maodoutech/my-bitcoin/blob/master/doc/v4.md)
+5. [AppInit2前三步](https://github.com/maodoutech/my-bitcoin/blob/master/doc/v5.md)
