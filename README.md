@@ -44,9 +44,8 @@ make
 ## 文档
 
 ### 理论
-[代码结构](https://github.com/maodoutech/my-bitcoin/tree/master/doc/overview.md)
-
-[交易](https://github.com/maodoutech/my-bitcoin/tree/master/doc/theory_transaction.md)
+1. [代码结构](https://github.com/maodoutech/my-bitcoin/tree/master/doc/overview.md)
+2. [交易](https://github.com/maodoutech/my-bitcoin/tree/master/doc/theory_transaction.md)
 
 ### 版本
 

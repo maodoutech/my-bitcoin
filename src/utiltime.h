@@ -6,6 +6,7 @@
 
 int64_t GetTimeMicros();
 int64_t GetLogTimeMicros();
+void SetMockTime(int64_t nMockTimeIn);
 
 std::string DateTimeStrFormat(const char* pszFormat, int64_t nTime);
 

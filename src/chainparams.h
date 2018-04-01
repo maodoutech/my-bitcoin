@@ -21,11 +21,14 @@ public:
     bool RequireStandard() const { return fRequireStandard; }
     /** Default value for -checkmempool and -checkblockindex argument */
     bool DefaultConsistencyChecks() const { return fDefaultConsistencyChecks; }
+    /** Return the BIP70 network string (main, test or regtest) */
+    std::string NetworkIDString() const { return strNetworkID; }
 
 protected:
     int nDefaultPort;
     bool fDefaultConsistencyChecks;
     bool fRequireStandard;
+    std::string strNetworkID;
 };
 
 /**

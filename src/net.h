@@ -1,6 +1,8 @@
 #ifndef BITCOIN_NET_H
 #define BITCOIN_NET_H
 
+#include "protocol.h"
+
 #include <stdint.h>
 #include <unistd.h>
 
@@ -46,4 +48,5 @@ static const unsigned int DEFAULT_MISBEHAVING_BANTIME = 60 * 60 * 24;  // Defaul
 /** Maximum number of connections to simultaneously allow (aka connection slots) */
 extern int nMaxConnections;
 
+extern uint64_t nLocalServices;
 #endif // BITCOIN_NET_H

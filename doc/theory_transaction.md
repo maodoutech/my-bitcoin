@@ -163,3 +163,9 @@ https://blog.csdn.net/lizhe_dashuju/article/details/79186389
 https://en.bitcoin.it/wiki/Bitcoin_Core_0.11_(ch_2):_Data_Storage
 
 http://baya.github.io/2017/05/11/7daystalk.html
+
+**脚本**
+
+http://book.8btc.com/books/6/masterbitcoin2cn/_book/appdx-scriptops.html
+
+https://en.bitcoin.it/wiki/Script

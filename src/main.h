@@ -1,7 +1,11 @@
 #ifndef BITCOIN_MAIN_H
 #define BITCOIN_MAIN_H
 
+#include "amount.h"
+
 #include <stdint.h>
+
+class CTxMemPool;
 
 /** Default for accepting alerts from the P2P network. */
 static const bool DEFAULT_ALERTS = false;
@@ -81,7 +85,21 @@ static const bool DEFAULT_ENABLE_REPLACEMENT = true;
 /** Maximum number of headers to announce when relaying blocks with headers message.*/
 static const unsigned int MAX_BLOCKS_TO_ANNOUNCE = 8;
 
+extern CTxMemPool mempool;
+extern int nScriptCheckThreads;
+extern bool fCheckBlockIndex;
+extern bool fCheckpointsEnabled;
+extern CFeeRate minRelayTxFee;
+extern bool fRequireStandard;
+extern unsigned int nBytesPerSigOp;
+extern bool fIsBareMultisigStd;
+extern bool fAlerts;
+extern bool fEnableReplacement;
 
+/** True if we're running in -prune mode. */
+extern bool fPruneMode;
+/** Number of MiB of block files that we're trying to stay below. */
+extern uint64_t nPruneTarget;
 
 /** Block files containing a block-height within MIN_BLOCKS_TO_KEEP of chainActive.Tip() will not be pruned. */
 static const unsigned int MIN_BLOCKS_TO_KEEP = 288;

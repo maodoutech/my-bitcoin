@@ -7,10 +7,14 @@ set(bitcoind_source
     chainparamsbase.cpp
     clientversion.cpp
     init.cpp
+    main.cpp
     net.cpp
+    netbase.cpp
     noui.cpp
     scheduler.cpp
+    script/standard.cpp
     sync.cpp
+    txmempool.cpp
     torcontrol.cpp
     util.cpp
     utilmoneystr.cpp
