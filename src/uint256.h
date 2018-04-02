@@ -73,18 +73,24 @@ public:
 
     unsigned int GetSerializeSize(int nType, int nVersion) const
     {
+        (void) nType;
+        (void) nVersion;
         return sizeof(data);
     }
 
     template<typename Stream>
     void Serialize(Stream& s, int nType, int nVersion) const
     {
+        (void) nType;
+        (void) nVersion;
         s.write((char*)data, sizeof(data));
     }
 
     template<typename Stream>
     void Unserialize(Stream& s, int nType, int nVersion)
     {
+        (void) nType;
+        (void) nVersion;
         s.read((char*)data, sizeof(data));
     }
 };

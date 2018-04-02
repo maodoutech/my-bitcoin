@@ -2,6 +2,7 @@
 
 #include "chainparamsbase.h"
 #include "sync.h"
+#include "serialize.h"
 #include "tinyformat.h"
 #include "utilstrencodings.h"
 #include "utiltime.h"
@@ -20,12 +21,12 @@ map<string, string> mapArgs;
 map<string, vector<string> > mapMultiArgs;
 bool fDebug = false;
 bool fPrintToConsole = false;
-bool fPrintToDebugLog = true;
 bool fServer = false;
 bool fLogTimestamps = DEFAULT_LOGTIMESTAMPS;
 bool fLogTimeMicros = DEFAULT_LOGTIMEMICROS;
 bool fLogIPs = DEFAULT_LOGIPS;
 volatile bool fReopenDebugLog = false;
+bool fPrintToDebugLog = true;
 
 static boost::filesystem::path pathCached;
 static boost::filesystem::path pathCachedNetSpecific;
@@ -67,6 +68,51 @@ static void DebugPrintInit()
     assert(mutexDebugLog == NULL);
     mutexDebugLog = new boost::mutex();
     vMsgsBeforeOpenLog = new list<string>;
+}
+
+void OpenDebugLog()
+{
+    boost::call_once(&DebugPrintInit, debugPrintInitFlag);
+    boost::mutex::scoped_lock scoped_lock(*mutexDebugLog);
+
+    assert(fileout == NULL);
+    assert(vMsgsBeforeOpenLog);
+    boost::filesystem::path pathDebug = GetDataDir() / "debug.log";
+    fileout = fopen(pathDebug.string().c_str(), "a");
+    if (fileout) setbuf(fileout, NULL); // unbuffered
+
+    // dump buffered messages from before we opened the log
+    while (!vMsgsBeforeOpenLog->empty()) {
+        FileWriteStr(vMsgsBeforeOpenLog->front(), fileout);
+        vMsgsBeforeOpenLog->pop_front();
+    }
+
+    delete vMsgsBeforeOpenLog;
+    vMsgsBeforeOpenLog = NULL;
+}
+
+void ShrinkDebugFile()
+{
+    // Scroll debug.log if it's getting too big
+    boost::filesystem::path pathLog = GetDataDir() / "debug.log";
+    FILE* file = fopen(pathLog.string().c_str(), "r");
+    if (file && boost::filesystem::file_size(pathLog) > 10 * 1000000)
+    {
+        // Restart the file with some of the end
+        std::vector <char> vch(200000,0);
+        fseek(file, -((long)vch.size()), SEEK_END);
+        int nBytes = fread(begin_ptr(vch), 1, vch.size(), file);
+        fclose(file);
+
+        file = fopen(pathLog.string().c_str(), "w");
+        if (file)
+        {
+            fwrite(begin_ptr(vch), 1, nBytes, file);
+            fclose(file);
+        }
+    }
+    else if (file != NULL)
+        fclose(file);
 }
 
 bool LogAcceptCategory(const char* category)

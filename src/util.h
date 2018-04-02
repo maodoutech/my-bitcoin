@@ -24,9 +24,14 @@ extern bool fLogTimestamps;
 extern bool fLogTimeMicros;
 extern bool fLogIPs;
 extern volatile bool fReopenDebugLog;
+extern bool fPrintToDebugLog;
 
 extern const char * const BITCOIN_CONF_FILENAME;
 extern const char * const BITCOIN_PID_FILENAME;
+
+void OpenDebugLog();
+void ShrinkDebugFile();
+boost::filesystem::path GetConfigFile();
 
 inline bool IsSwitchChar(char c)
 {

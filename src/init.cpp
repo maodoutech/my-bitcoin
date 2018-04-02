@@ -3,30 +3,39 @@
 #include "amount.h"
 #include "chainparams.h"
 #include "chainparamsbase.h"
-#include "script/standard.h"
-#include "util.h"
-#include "netbase.h"
+#include "clientversion.h"
+#include "compat/sanity.h"
+#include "httpserver.h"
+#include "key.h"
 #include "main.h"
 #include "miner.h"
 #include "net.h"
-#include "httpserver.h"
+#include "netbase.h"
 #include "policy/policy.h"
-#include "txdb.h"
-#include "clientversion.h"
+#include "pubkey.h"
+#include "script/standard.h"
 #include "scheduler.h"
 #include "script/sigcache.h"
 #include "tinyformat.h"
 #include "torcontrol.h"
 #include "txmempool.h"
+#include "txdb.h"
 #include "ui_interface.h"
 #include "utilmoneystr.h"
 #include "utilstrencodings.h"
 #include "utiltime.h"
+#include "util.h"
+#include "wallet/db.h"
+#include "wallet/wallet.h"
+#include "wallet/walletdb.h"
 
 #include <signal.h>
 #include <sys/stat.h>
 #include <boost/algorithm/string/classification.hpp>
+#include <boost/filesystem.hpp>
+#include <boost/interprocess/sync/file_lock.hpp>
 #include <boost/algorithm/string/split.hpp>
+#include <db_cxx.h>
 
 using namespace std;
 
@@ -74,6 +83,8 @@ CClientUIInterface uiInterface; // Declared but not defined in uiinterface.h
 
 volatile bool fRequestShutdown = false;
 
+static boost::scoped_ptr<ECCVerifyHandle> globalVerifyHandle;
+
 /**
  * Signal handlers are very limited in what they are allowed to do, so:
  */
@@ -96,6 +107,22 @@ bool static InitError(const std::string &str)
 bool static InitWarning(const std::string &str)
 {
     uiInterface.ThreadSafeMessageBox(str, "", CClientUIInterface::MSG_WARNING);
+    return true;
+}
+
+/** Sanity checks
+ *  Ensure that Bitcoin is running in a usable environment with all
+ *  necessary library support.
+ */
+bool InitSanityCheck(void)
+{
+    if(!ECC_InitSanityCheck()) {
+        InitError("Elliptic curve cryptography sanity check failure. Aborting.");
+        return false;
+    }
+    if (!glibc_sanity_test() || !glibcxx_sanity_test())
+        return false;
+
     return true;
 }
 
@@ -202,11 +229,10 @@ std::string HelpMessage(HelpMessageMode mode)
     strUsage += HelpMessageOpt("-maxtxfee=<amt>", strprintf(("Maximum total fees (in %s) to use in a single wallet transaction; setting this too low may abort large transactions (default: %s)"),
         CURRENCY_UNIT, FormatMoney(DEFAULT_TRANSACTION_MAXFEE)));
     strUsage += HelpMessageOpt("-upgradewallet", ("Upgrade wallet to latest format on startup"));
-    strUsage += HelpMessageOpt("-wallet=<file>", ("Specify wallet file (within data directory)") + " " + strprintf(("(default: %s)"), "wallet.dat"));
-    strUsage += HelpMessageOpt("-walletbroadcast", ("Make the wallet broadcast transactions") + " " + strprintf(("(default: %u)"), DEFAULT_WALLETBROADCAST));
+    strUsage += HelpMessageOpt("-wallet=<file>", "Specify wallet file (within data directory) " + strprintf(("(default: %s)"), "wallet.dat"));
+    strUsage += HelpMessageOpt("-walletbroadcast", "Make the wallet broadcast transactions " + strprintf(("(default: %u)"), DEFAULT_WALLETBROADCAST));
     strUsage += HelpMessageOpt("-walletnotify=<cmd>", ("Execute command when a wallet transaction changes (%s in cmd is replaced by TxID)"));
-    strUsage += HelpMessageOpt("-zapwallettxes=<mode>", ("Delete all wallet transactions and only recover those parts of the blockchain through -rescan on startup") +
-        " " + ("(1 = keep tx meta data e.g. account owner and payment request information, 2 = drop tx meta data)"));
+    strUsage += HelpMessageOpt("-zapwallettxes=<mode>", ("Delete all wallet transactions and only recover those parts of the blockchain through -rescan on startup (1 = keep tx meta data e.g. account owner and payment request information, 2 = drop tx meta data)"));
 #endif
 
 #if ENABLE_ZMQ
@@ -546,6 +572,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 
 #ifdef ENABLE_WALLET
     bool fDisableWallet = GetBoolArg("-disablewallet", false);
+    (void) fDisableWallet;
 #endif
 
     nConnectTimeout = GetArg("-timeout", DEFAULT_CONNECT_TIMEOUT);
@@ -579,28 +606,28 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
         if (ParseMoney(mapArgs["-mintxfee"], n) && n > 0)
             CWallet::minTxFee = CFeeRate(n);
         else
-            return InitError(strprintf(_("Invalid amount for -mintxfee=<amount>: '%s'"), mapArgs["-mintxfee"]));
+            return InitError(strprintf("Invalid amount for -mintxfee=<amount>: '%s'", mapArgs["-mintxfee"]));
     }
     if (mapArgs.count("-fallbackfee"))
     {
         CAmount nFeePerK = 0;
         if (!ParseMoney(mapArgs["-fallbackfee"], nFeePerK))
-            return InitError(strprintf(_("Invalid amount for -fallbackfee=<amount>: '%s'"), mapArgs["-fallbackfee"]));
+            return InitError(strprintf("Invalid amount for -fallbackfee=<amount>: '%s'", mapArgs["-fallbackfee"]));
         if (nFeePerK > nHighTransactionFeeWarning)
-            InitWarning(_("-fallbackfee is set very high! This is the transaction fee you may pay when fee estimates are not available."));
+            InitWarning("-fallbackfee is set very high! This is the transaction fee you may pay when fee estimates are not available.");
         CWallet::fallbackFee = CFeeRate(nFeePerK);
     }
     if (mapArgs.count("-paytxfee"))
     {
         CAmount nFeePerK = 0;
         if (!ParseMoney(mapArgs["-paytxfee"], nFeePerK))
-            return InitError(strprintf(_("Invalid amount for -paytxfee=<amount>: '%s'"), mapArgs["-paytxfee"]));
+            return InitError(strprintf("Invalid amount for -paytxfee=<amount>: '%s'", mapArgs["-paytxfee"]));
         if (nFeePerK > nHighTransactionFeeWarning)
-            InitWarning(_("-paytxfee is set very high! This is the transaction fee you will pay if you send a transaction."));
+            InitWarning("-paytxfee is set very high! This is the transaction fee you will pay if you send a transaction.");
         payTxFee = CFeeRate(nFeePerK, 1000);
         if (payTxFee < ::minRelayTxFee)
         {
-            return InitError(strprintf(_("Invalid amount for -paytxfee=<amount>: '%s' (must be at least %s)"),
+            return InitError(strprintf("Invalid amount for -paytxfee=<amount>: '%s' (must be at least %s)",
                                        mapArgs["-paytxfee"], ::minRelayTxFee.ToString()));
         }
     }
@@ -608,13 +635,13 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     {
         CAmount nMaxFee = 0;
         if (!ParseMoney(mapArgs["-maxtxfee"], nMaxFee))
-            return InitError(strprintf(_("Invalid amount for -maxtxfee=<amount>: '%s'"), mapArgs["-maxtxfee"]));
+            return InitError(strprintf("Invalid amount for -maxtxfee=<amount>: '%s'", mapArgs["-maxtxfee"]));
         if (nMaxFee > nHighTransactionMaxFeeWarning)
-            InitWarning(_("-maxtxfee is set very high! Fees this large could be paid on a single transaction."));
+            InitWarning("-maxtxfee is set very high! Fees this large could be paid on a single transaction.");
         maxTxFee = nMaxFee;
         if (CFeeRate(maxTxFee, 1000) < ::minRelayTxFee)
         {
-            return InitError(strprintf(_("Invalid amount for -maxtxfee=<amount>: '%s' (must be at least the minrelay fee of %s to prevent stuck transactions)"),
+            return InitError(strprintf("Invalid amount for -maxtxfee=<amount>: '%s' (must be at least the minrelay fee of %s to prevent stuck transactions)",
                                        mapArgs["-maxtxfee"], ::minRelayTxFee.ToString()));
         }
     }
@@ -647,7 +674,55 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
     }
 
     // ********************************************************* Step 4: application initialization: dir lock, daemonize, pidfile, debug log
+    // Initialize elliptic curve code
+    ECC_Start();
+    globalVerifyHandle.reset(new ECCVerifyHandle());   
 
+    // Sanity check
+    if (!InitSanityCheck())
+        return InitError("Initialization sanity check failed. Bitcoin Core is shutting down.");
+
+    std::string strDataDir = GetDataDir().string();
+#ifdef ENABLE_WALLET
+    // Wallet file must be a plain filename without a directory
+    if (strWalletFile != boost::filesystem::basename(strWalletFile) + boost::filesystem::extension(strWalletFile))
+        return InitError(strprintf("Wallet %s resides outside data directory %s", strWalletFile, strDataDir));
+#endif
+
+    // Make sure only a single Bitcoin process is using the data directory.
+    boost::filesystem::path pathLockFile = GetDataDir() / ".lock";
+    FILE* file = fopen(pathLockFile.string().c_str(), "a"); // empty lock file; created if it doesn't exist.
+    if (file) fclose(file);
+
+    try {
+        static boost::interprocess::file_lock lock(pathLockFile.string().c_str());
+        if (!lock.try_lock())
+            return InitError(strprintf("Cannot obtain a lock on data directory %s. Bitcoin Core is probably already running.", strDataDir));
+    } catch(const boost::interprocess::interprocess_exception& e) {
+        return InitError(strprintf("Cannot obtain a lock on data directory %s. Bitcoin Core is probably already running. %s.", strDataDir, e.what()));
+    }
+
+    if (GetBoolArg("-shrinkdebugfile", !fDebug))
+        ShrinkDebugFile();
+
+    if (fPrintToDebugLog)
+        OpenDebugLog();
+
+#ifdef ENABLE_WALLET
+    LogPrintf("Using BerkeleyDB version %s\n", DbEnv::version(0, 0, 0));
+#endif
+    if (!fLogTimestamps)
+        LogPrintf("Startup time: %s\n", DateTimeStrFormat("%Y-%m-%d %H:%M:%S", GetTime()));
+    LogPrintf("Default data directory %s\n", GetDefaultDataDir().string());
+    LogPrintf("Using data directory %s\n", strDataDir);
+    LogPrintf("Using config file %s\n", GetConfigFile().string());
+    LogPrintf("Using at most %i connections (%i file descriptors available)\n", nMaxConnections, nFD);
+
+    LogPrintf("Using %u threads for script verification\n", nScriptCheckThreads);
+    if (nScriptCheckThreads) {
+        for (int i=0; i<nScriptCheckThreads-1; i++)
+            ;// threadGroup.create_thread(&ThreadScriptCheck);
+    }
 
     // ********************************************************* Step 5: verify wallet database integrity
 

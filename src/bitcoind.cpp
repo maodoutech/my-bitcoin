@@ -111,6 +111,7 @@ bool AppInit(int argc, char* argv[])
         InitLogging();
         InitParameterInteraction();
 
+        fRet = AppInit2(threadGroup, scheduler);
         LogPrintf("Log Inited");
     }
     catch (const std::exception& e) {
