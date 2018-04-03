@@ -1,4 +1,9 @@
 # bitcoin源码解析
+
+## 架构
+![architecture](https://github.com/maodoutech/my-bitcoin/blob/master/res/architecture)
+
+## 目标
 目标设定是看完bitcoin的代码，需要掌握哪些内容。前期这部分内容可能会随着代码的深入发生变动。
 从空工程，一步一步移植bitcoin代码过来，保证每个版本都可运行，直到最终一致。这样可以保证对代码运行了解透特。不浮在表面。
 主要包括：
