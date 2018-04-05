@@ -314,6 +314,24 @@ std::string HelpMessageOpt(const std::string &option, const std::string &message
            std::string("\n\n");
 }
 
+static std::string FormatException(const std::exception* pex, const char* pszThread)
+{
+    const char* pszModule = "bitcoin";
+    if (pex)
+        return strprintf(
+            "EXCEPTION: %s       \n%s       \n%s in %s       \n", typeid(*pex).name(), pex->what(), pszModule, pszThread);
+    else
+        return strprintf(
+            "UNKNOWN EXCEPTION       \n%s in %s       \n", pszModule, pszThread);
+}
+
+void PrintExceptionContinue(const std::exception* pex, const char* pszThread)
+{
+    std::string message = FormatException(pex, pszThread);
+    LogPrintf("\n\n************************\n%s\n", message);
+    fprintf(stderr, "\n\n************************\n%s\n", message.c_str());
+}
+
 void ClearDatadirCache()
 {
     pathCached = boost::filesystem::path();
@@ -444,6 +462,22 @@ int RaiseFileDescriptorLimit(int nMinFD) {
     return nMinFD; // getrlimit failed, assume it's fine
 }
 
+void RenameThread(const char* name)
+{
+#if defined(PR_SET_NAME)
+    // Only the first 15 characters are used (16 - NUL terminator)
+    ::prctl(PR_SET_NAME, name, 0, 0, 0);
+#elif (defined(__FreeBSD__) || defined(__OpenBSD__) || defined(__DragonFly__))
+    pthread_set_name_np(pthread_self(), name);
+
+#elif defined(MAC_OSX)
+    pthread_setname_np(name);
+#else
+    // Prevent warnings for unused parameters...
+    (void)name;
+#endif
+}
+
 void SetupEnvironment()
 {
     try {
@@ -463,6 +497,15 @@ void SetupEnvironment()
 bool SetupNetworking()
 {
     return true;
+}
+
+void SetThreadPriority(int nPriority)
+{
+#ifdef PRIO_THREAD
+    setpriority(PRIO_THREAD, 0, nPriority);
+#else // PRIO_THREAD
+    setpriority(PRIO_PROCESS, 0, nPriority);
+#endif // PRIO_THREAD
 }
 
 int GetNumCores()

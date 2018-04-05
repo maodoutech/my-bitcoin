@@ -2,6 +2,7 @@
 #define BITCOIN_MAIN_H
 
 #include "amount.h"
+#include "net.h"
 
 #include <stdint.h>
 
@@ -116,5 +117,14 @@ static const unsigned int DEFAULT_CHECKLEVEL = 3;
 // one 128MB block file + added 15% undo data = 147MB greater for a total of 545MB
 // Setting the target to > than 550MB will make it likely we can respect the target.
 static const uint64_t MIN_DISK_SPACE_FOR_BLOCK_FILES = 550 * 1024 * 1024;
+
+/** Process protocol messages received from a given node */
+bool ProcessMessages(CNode* pfrom);
+/**
+ * Send queued protocol messages to be sent to a give node.
+ *
+ * @param[in]   pto             The node which we are sending messages to.
+ */
+bool SendMessages(CNode* pto);
 
 #endif // BITCOIN_MAIN_H

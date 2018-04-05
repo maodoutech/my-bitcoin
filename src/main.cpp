@@ -25,3 +25,16 @@ bool fEnableReplacement = DEFAULT_ENABLE_REPLACEMENT;
 CFeeRate minRelayTxFee = CFeeRate(DEFAULT_MIN_RELAY_TX_FEE);
 
 CTxMemPool mempool(::minRelayTxFee);
+
+// requires LOCK(cs_vRecvMsg)
+bool ProcessMessages(CNode* pfrom)
+{
+    (void) pfrom;
+    return true;
+}
+
+bool SendMessages(CNode* pto)
+{
+    (void) pto;
+    return true;
+}

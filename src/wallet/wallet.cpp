@@ -1,5 +1,7 @@
 #include "wallet/wallet.h"
 
+using namespace std;
+
 /** Transaction fee set by the user */
 CFeeRate payTxFee(DEFAULT_TRANSACTION_FEE);
 CAmount maxTxFee = DEFAULT_TRANSACTION_MAXFEE;
@@ -18,3 +20,11 @@ CFeeRate CWallet::minTxFee = CFeeRate(DEFAULT_TRANSACTION_MINFEE);
  * Override with -fallbackfee
  */
 CFeeRate CWallet::fallbackFee = CFeeRate(DEFAULT_FALLBACK_FEE);
+
+bool CWallet::Verify(const string& walletFile, string& warningString, string& errorString)
+{
+    (void) walletFile;
+    (void) warningString;
+    (void) errorString;
+    return true;
+}

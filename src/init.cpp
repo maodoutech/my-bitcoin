@@ -13,6 +13,7 @@
 #include "netbase.h"
 #include "policy/policy.h"
 #include "pubkey.h"
+#include "rpcserver.h"
 #include "script/standard.h"
 #include "scheduler.h"
 #include "script/sigcache.h"
@@ -123,6 +124,26 @@ bool InitSanityCheck(void)
     if (!glibc_sanity_test() || !glibcxx_sanity_test())
         return false;
 
+    return true;
+}
+
+bool AppInitServers(boost::thread_group& threadGroup)
+{
+    (void) threadGroup;
+    /*
+    RPCServer::OnStopped(&OnRPCStopped);
+    RPCServer::OnPreCommand(&OnRPCPreCommand);
+    if (!InitHTTPServer())
+        return false;
+    if (!StartRPC())
+        return false;
+    if (!StartHTTPRPC())
+        return false;
+    if (GetBoolArg("-rest", DEFAULT_REST_ENABLE) && !StartREST())
+        return false;
+    if (!StartHTTPServer())
+        return false;
+    */
     return true;
 }
 
@@ -724,11 +745,48 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
             ;// threadGroup.create_thread(&ThreadScriptCheck);
     }
 
+    // Start the lightweight task scheduler thread
+    CScheduler::Function serviceLoop = boost::bind(&CScheduler::serviceQueue, &scheduler);
+    threadGroup.create_thread(boost::bind(&TraceThread<CScheduler::Function>, "scheduler", serviceLoop));
+
+    /* Start the RPC server already.  It will be started in "warmup" mode
+     * and not really process calls already (but it will signify connections
+     * that the server is there and will be ready later).  Warmup mode will
+     * be disabled when initialisation is finished.
+     */
+    if (fServer)
+    {
+        uiInterface.InitMessage.connect(SetRPCWarmupStatus);
+        if (!AppInitServers(threadGroup))
+            return InitError("Unable to start HTTP server. See debug log for details.");
+    }
+
+    int64_t nStart;
+    (void) nStart;
+
     // ********************************************************* Step 5: verify wallet database integrity
+#ifdef ENABLE_WALLET
+    if (!fDisableWallet) {
+        LogPrintf("Using wallet %s\n", strWalletFile);
+        uiInterface.InitMessage("Verifying wallet...");
+
+        std::string warningString;
+        std::string errorString;
+
+        if (!CWallet::Verify(strWalletFile, warningString, errorString))
+            return false;
+
+        if (!warningString.empty())
+            InitWarning(warningString);
+        if (!errorString.empty())
+            return InitError(errorString);
+
+    } // (!fDisableWallet)
+#endif // ENABLE_WALLET
 
 
     // ********************************************************* Step 6: network initialization
-
+    RegisterNodeSignals(GetNodeSignals());
 
     // ********************************************************* Step 7: load block chain
 

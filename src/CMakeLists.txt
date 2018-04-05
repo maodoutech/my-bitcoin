@@ -2,6 +2,7 @@ PROJECT(bitcoin)
 
 set(bitcoind_source
     amount.cpp
+    arith_uint256.cpp
     bitcoind.cpp
     chainparams.cpp
     chainparamsbase.cpp
@@ -23,8 +24,12 @@ set(bitcoind_source
     netbase.cpp
     noui.cpp
     pubkey.cpp
+    primitives/transaction.cpp
+    primitives/block.cpp
     random.cpp
+    rpcserver.cpp
     scheduler.cpp
+    script/script.cpp
     script/standard.cpp
     support/cleanse.cpp
     support/pagelocker.cpp

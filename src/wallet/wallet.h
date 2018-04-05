@@ -42,6 +42,10 @@ class CWallet {
 public:
     static CFeeRate minTxFee;
     static CFeeRate fallbackFee;
+
+    //! Verify the wallet database and perform salvage if required
+    static bool Verify(const std::string& walletFile, std::string& warningString, std::string& errorString);
 };
+
 
 #endif // BITCOIN_WALLET_WALLET_H
