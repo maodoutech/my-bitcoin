@@ -60,3 +60,5 @@ make
 3. [日志模块和琐](https://github.com/maodoutech/my-bitcoin/blob/master/doc/v3.md)
 4. [任务池](https://github.com/maodoutech/my-bitcoin/blob/master/doc/v4.md)
 5. [AppInit2前三步](https://github.com/maodoutech/my-bitcoin/blob/master/doc/v5.md)
+6. [加密算法](https://github.com/maodoutech/my-bitcoin/blob/master/doc/v6.md)
+7. [RPC](https://github.com/maodoutech/my-bitcoin/blob/master/doc/v7.md)
