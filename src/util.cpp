@@ -27,6 +27,7 @@ bool fLogTimeMicros = DEFAULT_LOGTIMEMICROS;
 bool fLogIPs = DEFAULT_LOGIPS;
 volatile bool fReopenDebugLog = false;
 bool fPrintToDebugLog = true;
+string strMiscWarning;
 
 static boost::filesystem::path pathCached;
 static boost::filesystem::path pathCachedNetSpecific;

@@ -12,6 +12,7 @@ set(_COPYRIGHT_YEAR, 2018)
 INCLUDE_DIRECTORIES(
     ${PROJECT_BINARY_DIR}/src
     ${PROJECT_BINARY_DIR}/src/secp256k1/include
+    ${PROJECT_BINARY_DIR}/src/univalue/include
 )
 
 LINK_DIRECTORIES(

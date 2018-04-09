@@ -6,6 +6,7 @@
 #include "clientversion.h"
 #include "compat/sanity.h"
 #include "httpserver.h"
+#include "httprpc.h"
 #include "key.h"
 #include "main.h"
 #include "miner.h"
@@ -14,6 +15,7 @@
 #include "policy/policy.h"
 #include "pubkey.h"
 #include "rpcserver.h"
+#include "rpcprotocol.h"
 #include "script/standard.h"
 #include "scheduler.h"
 #include "script/sigcache.h"
@@ -127,10 +129,24 @@ bool InitSanityCheck(void)
     return true;
 }
 
+void OnRPCStopped()
+{
+    cvBlockChange.notify_all();
+    LogPrint("rpc", "RPC stopped.\n");
+}
+
+void OnRPCPreCommand(const CRPCCommand& cmd)
+{
+    // Observe safe mode
+    string strWarning = GetWarnings("rpc");
+    if (strWarning != "" && !GetBoolArg("-disablesafemode", DEFAULT_DISABLE_SAFEMODE) &&
+        !cmd.okSafeMode)
+        throw JSONRPCError(RPC_FORBIDDEN_BY_SAFE_MODE, string("Safe mode: ") + strWarning);
+}
+
 bool AppInitServers(boost::thread_group& threadGroup)
 {
     (void) threadGroup;
-    /*
     RPCServer::OnStopped(&OnRPCStopped);
     RPCServer::OnPreCommand(&OnRPCPreCommand);
     if (!InitHTTPServer())
@@ -143,7 +159,6 @@ bool AppInitServers(boost::thread_group& threadGroup)
         return false;
     if (!StartHTTPServer())
         return false;
-    */
     return true;
 }
 
@@ -455,7 +470,7 @@ void InitLogging()
     fLogTimeMicros = GetBoolArg("-logtimemicros", DEFAULT_LOGTIMEMICROS);
     fLogIPs = GetBoolArg("-logips", DEFAULT_LOGIPS);
 
-    LogPrintf("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
+    LogPrintf("\n\n\n");
     LogPrintf("Bitcoin version %s (%s)\n", FormatFullVersion(), CLIENT_DATE);
 }
 
@@ -804,6 +819,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 
 
     // ********************************************************* Step 12: finished
+    SetRPCWarmupFinished();
 
     
 

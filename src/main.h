@@ -3,6 +3,7 @@
 
 #include "amount.h"
 #include "net.h"
+#include "sync.h"
 
 #include <stdint.h>
 
@@ -97,6 +98,8 @@ extern bool fIsBareMultisigStd;
 extern bool fAlerts;
 extern bool fEnableReplacement;
 
+extern CConditionVariable cvBlockChange;
+
 /** True if we're running in -prune mode. */
 extern bool fPruneMode;
 /** Number of MiB of block files that we're trying to stay below. */
@@ -126,5 +129,14 @@ bool ProcessMessages(CNode* pfrom);
  * @param[in]   pto             The node which we are sending messages to.
  */
 bool SendMessages(CNode* pto);
+
+/** Format a string that describes several potential problems detected by the core.
+ * strFor can have three values:
+ * - "rpc": get critical warnings, which should put the client in safe mode if non-empty
+ * - "statusbar": get all warnings
+ * - "gui": get all warnings, translated (where possible) for GUI
+ * This function only returns the highest priority warning of the set selected by strFor.
+ */
+std::string GetWarnings(const std::string& strFor);
 
 #endif // BITCOIN_MAIN_H

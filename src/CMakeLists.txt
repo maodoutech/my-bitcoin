@@ -17,6 +17,8 @@ set(bitcoind_source
     crypto/sha256.cpp
     crypto/sha512.cpp
     hash.cpp
+    httpserver.cpp
+    httprpc.cpp
     init.cpp
     key.cpp
     main.cpp
@@ -27,6 +29,8 @@ set(bitcoind_source
     primitives/transaction.cpp
     primitives/block.cpp
     random.cpp
+    rest.cpp
+    rpcprotocol.cpp
     rpcserver.cpp
     scheduler.cpp
     script/script.cpp
@@ -45,10 +49,12 @@ set(bitcoind_source
 )
 
 ADD_SUBDIRECTORY(secp256k1)
+ADD_SUBDIRECTORY(univalue)
 
 ADD_DEFINITIONS(-DMAC_OSX -DEBUG_LOCKORDER -DENABLE_WALLET)
 
 LINK_DIRECTORIES(/usr/local/Cellar/berkeley-db@4/4.8.30/lib)
+LINK_DIRECTORIES(/usr/local/Cellar/libevent/2.1.8/lib)
 
 add_executable(bitcoind ${bitcoind_source})
 #add_library(bitcoind_static STATIC ${bitcoind_source})
@@ -58,4 +64,4 @@ add_executable(bitcoind ${bitcoind_source})
 #SET_TARGET_PROPERTIES(bitcoind PROPERTIES CLEAN_DIRECT_OUTPUT 1)
 #SET_TARGET_PROPERTIES(bitcoind_static PROPERTIES CLEAN_DIRECT_OUTPUT 1)
 
-TARGET_LINK_LIBRARIES(bitcoind boost_filesystem boost_system boost_thread boost_program_options boost_chrono secp256k1 crypto ssl db db_cxx)
+TARGET_LINK_LIBRARIES(bitcoind boost_filesystem boost_system boost_thread boost_program_options boost_chrono secp256k1 crypto ssl db db_cxx event event_pthreads univalue)

@@ -78,14 +78,14 @@ typedef AnnotatedMixin<boost::mutex> CWaitableCriticalSection;
 /** Just a typedef for boost::condition_variable, can be wrapped later if desired */
 typedef boost::condition_variable CConditionVariable;
 
-static void EnterCritical(const char* pszName, const char* pszFile, int nLine, void* cs, bool fTry = false) {
+static inline void EnterCritical(const char* pszName, const char* pszFile, int nLine, void* cs, bool fTry = false) {
     (void)pszName;
     (void)pszFile;
     (void)nLine;
     (void)cs;
     (void)fTry;
 }
-static void LeaveCritical() {}
+static inline void LeaveCritical() {}
 std::string LocksHeld();
 void AssertLockHeldInternal(const char* pszName, const char* pszFile, int nLine, void* cs);
 #define AssertLockHeld(cs) AssertLockHeldInternal(#cs, __FILE__, __LINE__, &cs)

@@ -113,7 +113,7 @@ bool AppInit(int argc, char* argv[])
 
         fRet = AppInit2(threadGroup, scheduler);
         scheduler.stop();
-        sleep(1);
+        sleep(1000);
     }
     catch (const std::exception& e) {
     } catch (...) {

@@ -26,6 +26,8 @@ extern bool fLogTimeMicros;
 extern bool fLogIPs;
 extern volatile bool fReopenDebugLog;
 extern bool fPrintToDebugLog;
+extern bool fServer;
+extern std::string strMiscWarning;
 
 extern const char * const BITCOIN_CONF_FILENAME;
 extern const char * const BITCOIN_PID_FILENAME;
@@ -190,6 +192,12 @@ template <typename Callable> void TraceThread(const char* name,  Callable func)
         PrintExceptionContinue(NULL, name);
         throw;
     }
+}
+
+static inline bool error(const char* format)
+{
+    LogPrintStr(std::string("ERROR: ") + format + "\n");
+    return false;
 }
 
 #endif // BITCOIN_UTIL_H
