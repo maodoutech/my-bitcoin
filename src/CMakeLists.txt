@@ -64,4 +64,4 @@ add_executable(bitcoind ${bitcoind_source})
 #SET_TARGET_PROPERTIES(bitcoind PROPERTIES CLEAN_DIRECT_OUTPUT 1)
 #SET_TARGET_PROPERTIES(bitcoind_static PROPERTIES CLEAN_DIRECT_OUTPUT 1)
 
-TARGET_LINK_LIBRARIES(bitcoind boost_filesystem boost_system boost_thread boost_program_options boost_chrono secp256k1 crypto ssl db db_cxx event event_pthreads univalue)
+TARGET_LINK_LIBRARIES(bitcoind boost_filesystem boost_system boost_thread boost_program_options boost_chrono secp256k1 crypto ssl db db_cxx event event_pthreads univalue miniupnpc)

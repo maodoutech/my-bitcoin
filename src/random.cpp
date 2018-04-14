@@ -59,3 +59,10 @@ void seed_insecure_rand(bool fDeterministic)
         insecure_rand_Rw = tmp;
     }
 }
+
+uint256 GetRandHash()
+{
+    uint256 hash;
+    GetRandBytes((unsigned char*)&hash, sizeof(hash));
+    return hash;
+}

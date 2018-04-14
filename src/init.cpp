@@ -816,6 +816,7 @@ bool AppInit2(boost::thread_group& threadGroup, CScheduler& scheduler)
 
 
     // ********************************************************* Step 11: start node
+    StartNode(threadGroup, scheduler);
 
 
     // ********************************************************* Step 12: finished

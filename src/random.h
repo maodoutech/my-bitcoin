@@ -1,6 +1,8 @@
 #ifndef BITCOIN_RANDOM_H
 #define BITCOIN_RANDOM_H
 
+#include "uint256.h"
+
 #include <stdint.h>
 
 /**
@@ -13,6 +15,7 @@ void RandAddSeedPerfmon();
  * Functions to gather random data via the OpenSSL PRNG
  */
 void GetRandBytes(unsigned char* buf, int num);
+uint256 GetRandHash();
 
 /**
  * Seed insecure_rand using the random pool.

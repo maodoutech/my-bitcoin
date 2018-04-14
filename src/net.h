@@ -1,12 +1,21 @@
 #ifndef BITCOIN_NET_H
 #define BITCOIN_NET_H
 
+#include "netbase.h"
 #include "protocol.h"
 
 #include <stdint.h>
 #include <unistd.h>
 
 #include <boost/signals2/signal.hpp>
+
+class CAddrMan;
+class CScheduler;
+class CNode;
+
+namespace boost {
+    class thread_group;
+} // namespace boost
 
 /** Time between pings automatically sent out for latency probing and keepalive (in seconds). */
 static const int PING_INTERVAL = 2 * 60;
@@ -86,6 +95,25 @@ struct CNodeSignals
 
 
 CNodeSignals& GetNodeSignals();
+
+enum
+{
+    LOCAL_NONE,   // unknown
+    LOCAL_IF,     // address a local interface listens on
+    LOCAL_BIND,   // address explicit bound to
+    LOCAL_UPNP,   // address reported by UPnP
+    LOCAL_MANUAL, // address explicitly specified (-externalip=)
+
+    LOCAL_MAX
+};
+
+struct LocalServiceInfo {
+    int nScore;
+    int nPort;
+};
+
+void SetReachable(enum Network net, bool fFlag = true);
+void StartNode(boost::thread_group& threadGroup, CScheduler& scheduler);
 
 /** Register with a network node to receive its signals */
 void RegisterNodeSignals(CNodeSignals& nodeSignals);
