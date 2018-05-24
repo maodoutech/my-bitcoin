@@ -7,6 +7,7 @@
 #include <stdint.h>
 #include <unistd.h>
 
+#include <boost/filesystem/path.hpp>
 #include <boost/signals2/signal.hpp>
 
 class CAddrMan;
@@ -117,5 +118,16 @@ void StartNode(boost::thread_group& threadGroup, CScheduler& scheduler);
 
 /** Register with a network node to receive its signals */
 void RegisterNodeSignals(CNodeSignals& nodeSignals);
+
+/** Access to the (IP) address database (peers.dat) */
+class CAddrDB
+{
+private:
+    boost::filesystem::path pathAddr;
+public:
+    CAddrDB();
+    bool Write(const CAddrMan& addr);
+    bool Read(CAddrMan& addr);
+};
 
 #endif // BITCOIN_NET_H

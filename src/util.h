@@ -201,3 +201,6 @@ static inline bool error(const char* format)
 }
 
 #endif // BITCOIN_UTIL_H
+
+void FileCommit(FILE *fileout);
+bool RenameOver(boost::filesystem::path src, boost::filesystem::path dest);

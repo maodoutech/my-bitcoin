@@ -1,6 +1,7 @@
 PROJECT(bitcoin)
 
 set(bitcoind_source
+    addrman.cpp
     amount.cpp
     arith_uint256.cpp
     bitcoind.cpp
@@ -25,6 +26,7 @@ set(bitcoind_source
     net.cpp
     netbase.cpp
     noui.cpp
+    protocol.cpp
     pubkey.cpp
     primitives/transaction.cpp
     primitives/block.cpp
@@ -38,6 +40,7 @@ set(bitcoind_source
     support/cleanse.cpp
     support/pagelocker.cpp
     sync.cpp
+    timedata.cpp
     txmempool.cpp
     torcontrol.cpp
     util.cpp

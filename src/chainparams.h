@@ -2,6 +2,7 @@
 #define BITCOIN_CHAINPARAMS_H
 
 #include "chainparamsbase.h"
+#include "protocol.h"
 
 #include <string>
 
@@ -15,6 +16,7 @@
 class CChainParams
 {
 public:
+    const CMessageHeader::MessageStartChars& MessageStart() const { return pchMessageStart; }
     int GetDefaultPort() const { return nDefaultPort; }
 
     /** Policy: Filter transactions that do not match well-defined patterns */
@@ -29,6 +31,7 @@ protected:
     bool fDefaultConsistencyChecks;
     bool fRequireStandard;
     std::string strNetworkID;
+    CMessageHeader::MessageStartChars pchMessageStart;
 };
 
 /**

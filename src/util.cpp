@@ -517,3 +517,21 @@ int GetNumCores()
     return boost::thread::hardware_concurrency();
 #endif
 }
+
+void FileCommit(FILE *fileout)
+{
+    fflush(fileout); // harmless if redundantly called
+    #if defined(__linux__) || defined(__NetBSD__)
+    fdatasync(fileno(fileout));
+    #elif defined(__APPLE__) && defined(F_FULLFSYNC)
+    fcntl(fileno(fileout), F_FULLFSYNC, 0);
+    #else
+    fsync(fileno(fileout));
+    #endif
+}
+
+bool RenameOver(boost::filesystem::path src, boost::filesystem::path dest)
+{
+    int rc = std::rename(src.string().c_str(), dest.string().c_str());
+    return (rc == 0);
+}
