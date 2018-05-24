@@ -5,6 +5,7 @@ set(bitcoind_source
     amount.cpp
     arith_uint256.cpp
     bitcoind.cpp
+    bloom.cpp
     chainparams.cpp
     chainparamsbase.cpp
     compat/glibc_sanity.cpp

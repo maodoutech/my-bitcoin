@@ -259,6 +259,8 @@ public:
     template<typename Stream>
     void Serialize(Stream& s, int nType, int nVersion) const
     {
+        (void) nType;
+        (void) nVersion;
         // Special case: stream << stream concatenates like stream += stream
         if (!vch.empty())
             s.write((char*)&vch[0], vch.size() * sizeof(vch[0]));
