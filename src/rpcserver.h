@@ -72,6 +72,8 @@ public:
 extern const CRPCTable tableRPC;
 
 bool StartRPC();
+void InterruptRPC();
+void StopRPC();
 
 std::string JSONRPCExecBatch(const UniValue& vReq);
 

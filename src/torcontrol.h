@@ -9,4 +9,8 @@
 extern const std::string DEFAULT_TOR_CONTROL;
 static const bool DEFAULT_LISTEN_ONION = true;
 
+void InterruptTorControl();
+
+void StopTorControl();
+
 #endif /* BITCOIN_TORCONTROL_H */

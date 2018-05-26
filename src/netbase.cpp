@@ -584,10 +584,11 @@ bool ConnectSocket(const CService &addrDest, SOCKET& hSocketRet, int nTimeout, b
     if (outProxyConnectionFailed)
         *outProxyConnectionFailed = false;
 
-    if (GetProxy(addrDest.GetNetwork(), proxy))
+    if (GetProxy(addrDest.GetNetwork(), proxy)) {
         return ConnectThroughProxy(proxy, addrDest.ToStringIP(), addrDest.GetPort(), hSocketRet, nTimeout, outProxyConnectionFailed);
-    else // no proxy needed (none set for target network)
+    } else { // no proxy needed (none set for target network)
         return ConnectSocketDirectly(addrDest, hSocketRet, nTimeout);
+    }
 }
 
 bool ConnectSocketByName(CService &addr, SOCKET& hSocketRet, const char *pszDest, int portDefault, int nTimeout, bool *outProxyConnectionFailed)

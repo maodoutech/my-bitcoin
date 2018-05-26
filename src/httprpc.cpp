@@ -219,7 +219,7 @@ static bool InitRPCAuthentication()
 
 bool StartHTTPRPC()
 {
-    LogPrint("rpc", "Starting HTTP RPC server\n");
+    LogPrintf("Starting HTTP RPC server\n");
     if (!InitRPCAuthentication())
         return false;
 
@@ -229,4 +229,9 @@ bool StartHTTPRPC()
     httpRPCTimerInterface = new HTTPRPCTimerInterface(EventBase());
     RPCRegisterTimerInterface(httpRPCTimerInterface);
     return true;
+}
+
+void InterruptHTTPRPC()
+{
+    LogPrintf("Interrupting HTTP RPC server\n");
 }

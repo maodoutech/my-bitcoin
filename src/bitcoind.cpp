@@ -5,6 +5,7 @@
 #include "scheduler.h"
 #include "tinyformat.h"
 #include "util.h"
+#include "utiltime.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/algorithm/string/predicate.hpp>
@@ -12,6 +13,22 @@
 #include <iostream>
 
 static bool fDaemon;
+
+void WaitForShutdown(boost::thread_group* threadGroup)
+{
+    bool fShutdown = ShutdownRequested();
+    // Tell the main threads to shutdown.
+    while (!fShutdown)
+    {
+        MilliSleep(200);
+        fShutdown = ShutdownRequested();
+    }
+    if (threadGroup)
+    {
+        Interrupt(*threadGroup);
+        threadGroup->join_all();
+    }
+}
 
 bool AppInit(int argc, char* argv[])
 {
@@ -112,13 +129,23 @@ bool AppInit(int argc, char* argv[])
         InitParameterInteraction();
 
         fRet = AppInit2(threadGroup, scheduler);
-        scheduler.stop();
-        sleep(1000);
     }
     catch (const std::exception& e) {
+        PrintExceptionContinue(&e, "AppInit()");
     } catch (...) {
+        PrintExceptionContinue(NULL, "AppInit()");
     }
        
+    LogPrintf("AppInit ret=%d\n", fRet);
+    if (!fRet)
+    {
+        Interrupt(threadGroup);
+        // threadGroup.join_all(); was left out intentionally here, because we didn't re-test all of
+        // the startup-failure cases to make sure they don't result in a hang due to some
+        // thread-blocking-waiting-for-another-thread-during-startup case
+    } else {
+        WaitForShutdown(&threadGroup);
+    }
 
     return fRet;
 }

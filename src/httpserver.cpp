@@ -570,7 +570,7 @@ boost::thread threadHTTP;
 
 bool StartHTTPServer()
 {
-    LogPrint("http", "Starting HTTP server\n");
+    LogPrintf("Starting HTTP server\n");
     int rpcThreads = std::max((long)GetArg("-rpcthreads", DEFAULT_HTTP_THREADS), 1L);
     LogPrintf("HTTP: starting %d worker threads\n", rpcThreads);
     threadHTTP = boost::thread(boost::bind(&ThreadHTTP, eventBase, eventHTTP));
@@ -578,4 +578,40 @@ bool StartHTTPServer()
     for (int i = 0; i < rpcThreads; i++)
         boost::thread(boost::bind(&HTTPWorkQueueRun, workQueue));
     return true;
+}
+
+/** Callback to reject HTTP requests after shutdown. */
+static void http_reject_request_cb(struct evhttp_request* req, void*)
+{
+    LogPrintf("Rejecting request while shutting down\n");
+    evhttp_send_error(req, HTTP_SERVUNAVAIL, NULL);
+}
+
+void InterruptHTTPServer()
+{
+    LogPrintf("Interrupting HTTP server\n");
+    if (eventHTTP) {
+        // Unlisten sockets
+        BOOST_FOREACH (evhttp_bound_socket *socket, boundSockets) {
+            evhttp_del_accept_socket(eventHTTP, socket);
+        }
+        // Reject requests on current connections
+        evhttp_set_gencb(eventHTTP, http_reject_request_cb, NULL);
+    }
+    if (workQueue)
+        workQueue->Interrupt();
+}
+
+void UnregisterHTTPHandler(const std::string &prefix, bool exactMatch)
+{
+    std::vector<HTTPPathHandler>::iterator i = pathHandlers.begin();
+    std::vector<HTTPPathHandler>::iterator iend = pathHandlers.end();
+    for (; i != iend; ++i)
+        if (i->prefix == prefix && i->exactMatch == exactMatch)
+            break;
+    if (i != iend)
+    {
+        LogPrint("http", "Unregistering HTTP handler for %s (exactmatch %d)\n", prefix, exactMatch);
+        pathHandlers.erase(i);
+    }
 }

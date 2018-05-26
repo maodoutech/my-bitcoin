@@ -32,6 +32,9 @@ bool InitHTTPServer();
  */
 bool StartHTTPServer();
 
+/** Interrupt HTTP server threads */
+void InterruptHTTPServer();
+
 /** Register handler for prefix.
  * If multiple handlers match a prefix, the first-registered one will
  * be invoked.

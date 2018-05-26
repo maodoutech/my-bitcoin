@@ -268,6 +268,9 @@ template<typename T>
 inline void formatValue(std::ostream& out, const char* /*fmtBegin*/,
                         const char* fmtEnd, const T& value)
 {
+    if (fmtEnd == NULL) {
+        return;
+    }
 #ifndef TINYFORMAT_ALLOW_WCHAR_STRINGS
     // Since we don't support printing of wchar_t using "%ls", make it fail at
     // compile time in preference to printing as a void* at runtime.

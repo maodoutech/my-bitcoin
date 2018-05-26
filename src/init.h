@@ -25,4 +25,9 @@ std::string HelpMessage(HelpMessageMode mode);
 /** Returns licensing information (for -version) */
 std::string LicenseInfo();
 
+/** Interrupt threads */
+void Interrupt(boost::thread_group& threadGroup);
+void StartShutdown();
+bool ShutdownRequested();
+
 #endif // BITCOIN_INIT_H

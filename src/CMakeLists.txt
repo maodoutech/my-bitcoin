@@ -52,6 +52,9 @@ set(bitcoind_source
     wallet/wallet.cpp
 )
 
+SET(CMAKE_C_FLAGS_DEBUG "-g -Wall")
+SET(CMAKE_CXX_FLAGS_DEBUG "-g -Wall")
+
 ADD_SUBDIRECTORY(secp256k1)
 ADD_SUBDIRECTORY(univalue)
 

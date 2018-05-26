@@ -1,5 +1,6 @@
 #include "scheduler.h"
 
+#include "util.h"
 #include "reverselock.h"
 
 #include <assert.h>
@@ -75,6 +76,7 @@ void CScheduler::serviceQueue()
         }
     }
     --nThreadsServicingQueue;
+
 }
 
 void CScheduler::stop(bool drain)

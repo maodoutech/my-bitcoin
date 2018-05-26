@@ -22,6 +22,10 @@ static bool fRPCInWarmup = true;
 static std::vector<RPCTimerInterface*> timerInterfaces;
 const CRPCTable tableRPC;
 
+/* Map of name to timer.
+ * @note Can be changed to std::unique_ptr when C++11 */
+static std::map<std::string, boost::shared_ptr<RPCTimerBase> > deadlineTimers;
+
 void SetRPCWarmupStatus(const std::string& newStatus)
 {
     LOCK(cs_rpcWarmup);
@@ -62,6 +66,20 @@ bool StartRPC()
     fRPCRunning = true;
     g_rpcSignals.Started();
     return true;
+}
+
+void InterruptRPC()
+{
+    LogPrint("rpc", "Interrupting RPC\n");
+    // Interrupt e.g. running longpolls
+    fRPCRunning = false;
+}
+
+void StopRPC()
+{
+    LogPrint("rpc", "Stopping RPC\n");
+    deadlineTimers.clear();
+    g_rpcSignals.Stopped();
 }
 
 void JSONRequest::parse(const UniValue& valRequest)

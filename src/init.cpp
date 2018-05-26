@@ -86,6 +86,15 @@ CClientUIInterface uiInterface; // Declared but not defined in uiinterface.h
 
 volatile bool fRequestShutdown = false;
 
+void StartShutdown()
+{
+    fRequestShutdown = true;
+}
+bool ShutdownRequested()
+{
+    return fRequestShutdown;
+}
+
 static boost::scoped_ptr<ECCVerifyHandle> globalVerifyHandle;
 
 /**
@@ -472,6 +481,16 @@ void InitLogging()
 
     LogPrintf("\n\n\n");
     LogPrintf("Bitcoin version %s (%s)\n", FormatFullVersion(), CLIENT_DATE);
+}
+
+void Interrupt(boost::thread_group& threadGroup)
+{
+    InterruptHTTPServer();
+    InterruptHTTPRPC();
+    InterruptRPC();
+    InterruptREST();
+    InterruptTorControl();
+    threadGroup.interrupt_all();
 }
 
 /** Initialize bitcoin.

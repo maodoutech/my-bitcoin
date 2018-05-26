@@ -6,6 +6,16 @@
 
 #include <string>
 
+struct CDNSSeedData {
+    std::string name, host;
+    CDNSSeedData(const std::string &strName, const std::string &strHost) : name(strName), host(strHost) {}
+};
+
+struct SeedSpec6 {
+    uint8_t addr[16];
+    uint16_t port;
+};
+
 /**
  * CChainParams defines various tweakable parameters of a given instance of the
  * Bitcoin system. There are three: the main network on which people trade goods
@@ -25,6 +35,8 @@ public:
     bool DefaultConsistencyChecks() const { return fDefaultConsistencyChecks; }
     /** Return the BIP70 network string (main, test or regtest) */
     std::string NetworkIDString() const { return strNetworkID; }
+    const std::vector<CDNSSeedData>& DNSSeeds() const { return vSeeds; }
+    const std::vector<SeedSpec6>& FixedSeeds() const { return vFixedSeeds; }
 
 protected:
     int nDefaultPort;
@@ -32,6 +44,8 @@ protected:
     bool fRequireStandard;
     std::string strNetworkID;
     CMessageHeader::MessageStartChars pchMessageStart;
+    std::vector<CDNSSeedData> vSeeds;
+    std::vector<SeedSpec6> vFixedSeeds;
 };
 
 /**
