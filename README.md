@@ -52,6 +52,7 @@ make
 ### 理论
 1. [代码结构](https://github.com/maodoutech/my-bitcoin/tree/master/doc/overview.md)
 2. [交易](https://github.com/maodoutech/my-bitcoin/tree/master/doc/theory_transaction.md)
+3. [一致性](https://github.com/maodoutech/my-bitcoin/tree/master/doc/consensus.md)
 
 ### 版本
 
