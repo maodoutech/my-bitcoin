@@ -62,3 +62,4 @@ make
 5. [AppInit2前三步](https://github.com/maodoutech/my-bitcoin/blob/master/doc/v5.md)
 6. [加密算法](https://github.com/maodoutech/my-bitcoin/blob/master/doc/v6.md)
 7. [RPC](https://github.com/maodoutech/my-bitcoin/blob/master/doc/v7.md)
+8. [P2P framework](https://github.com/maodoutech/my-bitcoin/blob/master/doc/v8.md)
