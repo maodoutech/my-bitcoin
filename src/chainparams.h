@@ -1,6 +1,7 @@
 #ifndef BITCOIN_CHAINPARAMS_H
 #define BITCOIN_CHAINPARAMS_H
 
+#include "consensus/params.h"
 #include "chainparamsbase.h"
 #include "protocol.h"
 
@@ -16,6 +17,15 @@ struct SeedSpec6 {
     uint16_t port;
 };
 
+typedef std::map<int, uint256> MapCheckpoints;
+
+struct CCheckpointData {
+    MapCheckpoints mapCheckpoints;
+    int64_t nTimeLastCheckpoint;
+    int64_t nTransactionsLastCheckpoint;
+    double fTransactionsPerDay;
+};
+
 /**
  * CChainParams defines various tweakable parameters of a given instance of the
  * Bitcoin system. There are three: the main network on which people trade goods
@@ -26,6 +36,7 @@ struct SeedSpec6 {
 class CChainParams
 {
 public:
+    const Consensus::Params& GetConsensus() const { return consensus; }
     const CMessageHeader::MessageStartChars& MessageStart() const { return pchMessageStart; }
     int GetDefaultPort() const { return nDefaultPort; }
 
@@ -37,6 +48,8 @@ public:
     std::string NetworkIDString() const { return strNetworkID; }
     const std::vector<CDNSSeedData>& DNSSeeds() const { return vSeeds; }
     const std::vector<SeedSpec6>& FixedSeeds() const { return vFixedSeeds; }
+    const CCheckpointData& Checkpoints() const { return checkpointData; }
+    int64_t MaxTipAge() const { return nMaxTipAge; }
 
 protected:
     int nDefaultPort;
@@ -46,6 +59,9 @@ protected:
     CMessageHeader::MessageStartChars pchMessageStart;
     std::vector<CDNSSeedData> vSeeds;
     std::vector<SeedSpec6> vFixedSeeds;
+    Consensus::Params consensus;
+    CCheckpointData checkpointData;
+    long nMaxTipAge;
 };
 
 /**

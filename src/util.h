@@ -1,7 +1,9 @@
 #ifndef BITCOIN_UTIL_H
 #define BITCOIN_UTIL_H
 
+#include "sync.h"
 #include "tinyformat.h"
+#include "utiltime.h"
 
 #include <exception>
 #include <map>
@@ -11,6 +13,7 @@
 
 #include <boost/filesystem/path.hpp>
 #include <boost/thread/exceptions.hpp>
+#include <boost/thread.hpp>
 
 static const bool DEFAULT_LOGTIMEMICROS = false;
 static const bool DEFAULT_LOGIPS        = false;
@@ -49,7 +52,15 @@ bool LogAcceptCategory(const char* category);
 /** Send a string to the log output */
 int LogPrintStr(const std::string &str);
 
-#define LogPrintf(...) LogPrint(NULL, __VA_ARGS__)
+static CCriticalSection cs_log;
+
+#define LogPrintf(...) {\
+    LOCK(cs_log);\
+    int64_t nTimeMicros = GetLogTimeMicros();\
+    std::string strStamped = DateTimeStrFormat("%Y-%m-%d %H:%M:%S", nTimeMicros/1000000);\
+    boost::filesystem::path filePath(__FILE__);\
+    std::cout << strStamped << " pid:" << boost::this_thread::get_id() << " " << filePath.filename().string() << ":" << __LINE__ << " " << __FUNCTION__ << ":  "; \
+    LogPrint(NULL, __VA_ARGS__);}
 
 /**
  * When we switch to C++11, this can be switched to variadic templates instead

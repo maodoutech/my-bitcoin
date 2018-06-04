@@ -97,6 +97,8 @@ extern unsigned int nBytesPerSigOp;
 extern bool fIsBareMultisigStd;
 extern bool fAlerts;
 extern bool fEnableReplacement;
+extern bool fImporting;
+extern bool fReindex;
 
 extern CConditionVariable cvBlockChange;
 
@@ -138,5 +140,13 @@ bool SendMessages(CNode* pto);
  * This function only returns the highest priority warning of the set selected by strFor.
  */
 std::string GetWarnings(const std::string& strFor);
+
+/** Increase a node's misbehavior score. */
+void Misbehaving(NodeId nodeid, int howmuch);
+
+/** Register with a network node to receive its signals */
+void RegisterNodeSignals(CNodeSignals& nodeSignals);
+/** Unregister a network node */
+void UnregisterNodeSignals(CNodeSignals& nodeSignals);
 
 #endif // BITCOIN_MAIN_H

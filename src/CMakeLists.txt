@@ -8,6 +8,7 @@ set(bitcoind_source
     bloom.cpp
     chainparams.cpp
     chainparamsbase.cpp
+    checkpoints.cpp
     compat/glibc_sanity.cpp
     compat/glibcxx_sanity.cpp
     clientversion.cpp

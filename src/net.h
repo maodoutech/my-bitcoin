@@ -710,10 +710,10 @@ struct LocalServiceInfo {
 };
 
 void SetReachable(enum Network net, bool fFlag = true);
+void SetLimited(enum Network net, bool fLimited = true);
+bool IsLimited(enum Network net);
+bool IsLimited(const CNetAddr& addr);
 void StartNode(boost::thread_group& threadGroup, CScheduler& scheduler);
-
-/** Register with a network node to receive its signals */
-void RegisterNodeSignals(CNodeSignals& nodeSignals);
 
 /** Access to the (IP) address database (peers.dat) */
 class CAddrDB
@@ -747,7 +747,11 @@ CNode* FindNode(const std::string& addrName);
 CNode* FindNode(const CService& ip);
 CNode* ConnectNode(CAddress addrConnect, const char *pszDest = NULL);
 bool OpenNetworkConnection(const CAddress& addrConnect, CSemaphoreGrant *grantOutbound = NULL, const char *strDest = NULL, bool fOneShot = false);
+bool BindListenPort(const CService &bindAddr, std::string& strError, bool fWhitelisted = false);
+unsigned short GetListenPort();
 
 void AddOneShot(const std::string& strDest);
+unsigned int SendBufferSize();
+bool SeenLocal(const CService& addr);
 
 #endif // BITCOIN_NET_H
